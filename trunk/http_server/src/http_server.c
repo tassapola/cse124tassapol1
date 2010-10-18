@@ -14,6 +14,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <string.h>
+#include "connection_handler.h"
 
 #define SOCKET_ERROR	-1
 #define QUEUE_SIZE		100
@@ -48,11 +49,16 @@ int main(void) {
 		printf("could not listen\n");
 		return EXIT_SUCCESS;
 	}
-	char *commands = malloc(BUFFER_SIZE * sizeof(char));
+
 	while (1) {
 		printf("waiting for a connection\n");
 		hSocket = accept(hServerSocket,(struct sockaddr *) &address, (socklen_t *) &nAddressSize);
 		printf("got a connection\n");
+		pid_t pId = fork();
+		if (pId != 0) {
+			handleConnection(hSocket);
+		}
+		/*
 		char pBuffer[1000];
 		//strcpy(pBuffer, "hahah1234");
 		printf("sending %s to client\n", pBuffer);
@@ -73,6 +79,7 @@ int main(void) {
 			printf("could not close socket");
 			return EXIT_SUCCESS;
 		}
+		*/
 	}
 	return EXIT_SUCCESS;
 }

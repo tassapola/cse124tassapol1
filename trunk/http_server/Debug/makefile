@@ -23,19 +23,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: http_server
+all: http_server_svn
 
 # Tool invocations
-http_server: $(OBJS) $(USER_OBJS)
+http_server_svn: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc  -o"http_server" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc  -o"http_server_svn" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) http_server
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) http_server_svn
 	-@echo ' '
 
 .PHONY: all clean dependents
