@@ -14,6 +14,41 @@
 #define SOCKET_ERROR	-1
 #define BUFFER_SIZE		100000
 
+char **curCmd;
+int numLinesInCurCmd;
+
+void splitToArray(char *curCommands) {
+	printf("starting split to array\n");
+	curCmd = malloc(sizeof(char *) * 100);
+	numLinesInCurCmd = 0;
+	int i;
+	char *tmp = malloc(sizeof(char) * BUFFER_SIZE);
+	int tmpSize = 0;
+	for (i = 0; i < strlen(curCommands); i++) {
+		if (i < strlen(curCommands) - 1 && curCommands[i] == 13 && curCommands[i+1] == 10) {
+			tmp[tmpSize] = '\0';
+			curCmd[numLinesInCurCmd] = tmp;
+			numLinesInCurCmd++;
+			tmp = malloc(sizeof(char) * BUFFER_SIZE);
+			tmpSize = 0;
+		} else if (i > 0 && curCommands[i] == 10 && curCommands[i-1]  == 13) {
+			//do nothing
+		} else {
+			tmp[tmpSize++] = curCommands[i];
+		}
+	}
+	if (tmpSize > 0) {
+		tmp[tmpSize] = '\0';
+		curCmd[numLinesInCurCmd] = tmp;
+		numLinesInCurCmd++;
+
+	}
+	printf("DEBUG\n");
+	for (i = 0; i < numLinesInCurCmd; i++) {
+		printf("%s\n", curCmd[i]);
+	}
+}
+
 void processCommands(char *commands) {
 	int i;
 	int size = strlen(commands);
@@ -36,9 +71,11 @@ void processCommands(char *commands) {
 		strncpy(commands, &commands[newStart], (numChars + 1) * sizeof(char));
 		commands[numChars] = '\0';
 
-		printf("DEBUG\n");
-		printf("%s-%s\n", curCommands, commands);
-		printf("size of commands = %d\n", strlen(commands));
+		//printf("DEBUG\n");
+		//printf("%s-%s\n", curCommands, commands);
+		//printf("size of commands = %d\n", strlen(commands));
+
+		splitToArray(curCommands);
 	}
 }
 
