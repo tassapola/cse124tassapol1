@@ -24,7 +24,7 @@ int main(void) {
 	int hSocket, hServerSocket;
 	struct sockaddr_in address;
 
-	int port = 30000;
+	int port = 30001;
 	hServerSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (hServerSocket == SOCKET_ERROR) {
 		printf("Could not make a socket\n");
