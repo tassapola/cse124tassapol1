@@ -23,7 +23,7 @@
 int main(void) {
 	int hSocket, hServerSocket;
 	struct sockaddr_in address;
-	char *webRoot = "/home/torvnc/webroot";
+	char *webRoot = "/home/tor/cse124tassapol1/webroot";
 
 	int port;
 	for (port = 30000; port < 30010; port ++) {
