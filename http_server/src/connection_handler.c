@@ -92,17 +92,28 @@ struct FirstCmd processFirstCmd() {
 	*/
 }
 
-void addResponse(char *buffer, char *text) {
-	strcat(buffer, text);
-	addResponseEnding(buffer);
+void addResponse(char *buffer, int *bufferLen, char *text, int textLen) {
+	int i;
+	for (i=0; i < textLen; i++) {
+		buffer[i + (*bufferLen)] = text[i];
+	}
+	(*bufferLen) += textLen;
+	buffer[*bufferLen] = '\0';
+	//strcat(buffer, text);
+	addCRLF(buffer, bufferLen);
 }
 
-void addResponseEnding(char *buffer) {
-	char *ending = malloc(sizeof(char) * 3);
+void addCRLF(char *buffer, int *bufferLen) {
+	/*char *ending = malloc(sizeof(char) * 3);
 	ending[0] = 13;
 	ending[1] = 10;
 	ending[2] = '\0';
-	strcat(buffer, ending);
+	*/
+	//strcat(buffer, ending);
+	buffer[*bufferLen] = 13;
+	buffer[(*bufferLen) + 1] = 10;
+	buffer[(*bufferLen) + 2] = '\0';
+	(*bufferLen) += 2;
 }
 
 char *getContentType(char *path) {
@@ -136,18 +147,25 @@ char *getContentType(char *path) {
 void doGet(char *path, int hSocket, char *webRoot) {
 	char *pBuffer = malloc(sizeof(char) * 10000000);
 	pBuffer[0] = '\0';
+	int pBufferLen = 0;
 	char *absolutePath = malloc(sizeof(char) * 10000);
 	strcat(absolutePath, webRoot);
 	strcat(absolutePath, path);
 	printf("absolutePath = %s\n", absolutePath);
 	FILE *f = fopen(absolutePath, "r");
 	if (f == NULL) {
-		addResponse(pBuffer, "HTTP/1.1 404 Not Found");
-		addResponse(pBuffer, "Connection: close");
-		addResponse(pBuffer, "Content-Type: text/html");
-		addResponse(pBuffer, "Content-Length: 19");
-		addResponseEnding(pBuffer);
-		addResponse(pBuffer, "Error 404 Not Found");
+		char *line;
+		line = "HTTP/1.1 404 Not Found";
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		line = "Connection: close";
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		line = "Content-Type: text/html";
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		line = "Content-Length: 19";
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		addCRLF(pBuffer, &pBufferLen);
+		line = "Error 404 Not Found";
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
 	} else {
 		char c;
 		char *bodyBuffer = malloc(sizeof(char) * 10000000);
@@ -161,25 +179,30 @@ void doGet(char *path, int hSocket, char *webRoot) {
 		bodyBuffer[bodyLen] ='\0';
 		printf("bodyBuffer = %s\n", bodyBuffer);
 		printf("bodyLen = %d\n", bodyLen);
-		addResponse(pBuffer, "HTTP/1.1 200 OK");
-			addResponse(pBuffer, "Date: Mon, 25 Oct 2010 07:54:17 GMT");
-			addResponse(pBuffer, "Connection: keep-alive");
+		char *line;
+		line = "HTTP/1.1 200 OK";
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		line = "Date: Mon, 25 Oct 2010 07:54:17 GMT";
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		line = "Connection: keep-alive";
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
 			char *contentType = getContentType(path);
 			printf("contentType = %s\n", contentType);
-			addResponse(pBuffer, contentType);
+			addResponse(pBuffer, &pBufferLen, contentType, strlen(contentType));
 			//addResponse(pBuffer, "Content-Type: text/plain");
 			char *contentLength = malloc(sizeof(char) * 100);
 			sprintf(contentLength, "Content-Length: %d", bodyLen);
 			//printf("contentLength = %s\n", contentLength);
-			addResponse(pBuffer, contentLength);
-			addResponseEnding(pBuffer);
-			addResponse(pBuffer, bodyBuffer);
+			addResponse(pBuffer, &pBufferLen, contentLength, strlen(contentLength));
+			addCRLF(pBuffer, &pBufferLen);
+			addResponse(pBuffer, &pBufferLen, bodyBuffer, bodyLen);
 	}
 
 	//addResponseEnding(pBuffer);
 	//addResponseEnding(pBuffer);
 	printf("pBuffer = %s\n", pBuffer);
-	write(hSocket, pBuffer, strlen(pBuffer) + 1);
+	printf("pBufferLen = %d\n", pBufferLen);
+	write(hSocket, pBuffer, pBufferLen);
 
 	if (f != NULL)
 		fclose(f);
