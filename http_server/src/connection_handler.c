@@ -105,10 +105,12 @@ void addResponseEnding(char *buffer) {
 	strcat(buffer, ending);
 }
 
-void doGet(char *path, int hSocket) {
+void doGet(char *path, int hSocket, char *webRoot) {
 	char *pBuffer = malloc(sizeof(char) * 10000);
 	pBuffer[0] = '\0';
 	addResponse(pBuffer, "HTTP/1.1 200 OK");
+	addResponse(pBuffer, "Date: Mon, 25 oct 2010 07:54:17 GMT");
+	addResponse(pBuffer, "Connection: keep-alive");
 	addResponse(pBuffer, "Content-Type: text/plain");
 	addResponse(pBuffer, "Content-Length: 3");
 	addResponseEnding(pBuffer);
@@ -116,17 +118,18 @@ void doGet(char *path, int hSocket) {
 	//addResponseEnding(pBuffer);
 	//addResponseEnding(pBuffer);
 	write(hSocket, pBuffer, strlen(pBuffer) + 1);
-
+/*
 	if (close(hSocket) == SOCKET_ERROR) {
 		printf("could not close socket\n");
 		return EXIT_SUCCESS;
 	} else {
 		printf("closing socket is successful\n");
 	}
+	*/
 	printf("ending doGet\n");
 }
 
-void processHttpRequest(char *request, int hSocket) {
+void processHttpRequest(char *request, int hSocket, char *webRoot) {
 	int i;
 	int size = strlen(request);
 	int found = -1;
@@ -159,12 +162,12 @@ void processHttpRequest(char *request, int hSocket) {
 		//printf("httpVersion = %s\n", firstCmd.httpVersion);
 
 		if (strcmp(firstCmd.httpOp, "GET") == 0) {
-			doGet(firstCmd.path, hSocket);
+			doGet(firstCmd.path, hSocket, webRoot);
 		}
 	}
 }
 
-void handleNewConnection(int hSocket) {
+void handleNewConnection(int hSocket, char *webRoot) {
 	printf("hsocket %d\n", hSocket);
 	char *httpRequest = malloc(BUFFER_SIZE * sizeof(char));
 
@@ -184,7 +187,7 @@ void handleNewConnection(int hSocket) {
 	newHttpRequest[size] = '\0';
 	httpRequest = strcat(httpRequest, newHttpRequest);
 	printf("%s\n", httpRequest);
-	processHttpRequest(httpRequest, hSocket);
+	processHttpRequest(httpRequest, hSocket, webRoot);
 
 	/*
 	if (close(hSocket) == SOCKET_ERROR) {

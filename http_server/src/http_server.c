@@ -23,6 +23,7 @@
 int main(void) {
 	int hSocket, hServerSocket;
 	struct sockaddr_in address;
+	char *webRoot = "/home/torvnc/webroot";
 
 	int port;
 	for (port = 30000; port < 30010; port ++) {
@@ -65,7 +66,7 @@ int main(void) {
 		printf("got a connection\n");
 		pid_t pId = fork();
 		if (pId != 0) {
-			handleNewConnection(hSocket);
+			handleNewConnection(hSocket, webRoot);
 		}
 		/*
 		char pBuffer[1000];
