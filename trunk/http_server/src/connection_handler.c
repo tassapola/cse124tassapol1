@@ -105,8 +105,36 @@ void addResponseEnding(char *buffer) {
 	strcat(buffer, ending);
 }
 
+char *getContentType(char *path) {
+	printf("starting getcontentType\n");
+	char *res = malloc(sizeof(char) * 10000);
+	char *dot = strchr(path, '.');
+	printf("dot = %s\n", dot);
+	if (dot == NULL) {
+		return "Content-Type: text/html";
+	} else {
+		char *extension = malloc(sizeof(char) * 10000);
+		strncpy(extension, (dot+1), (path+strlen(path) - dot));
+		printf("extension = %s\n", extension);
+		if (strcasecmp(extension, "htm") == 0 || strcasecmp(extension, "html") == 0) {
+			return "Content-Type: text/html";
+		} else
+			if (strcasecmp(extension, "txt") == 0) {
+				return "Content-Type: text/plain";
+			} else
+				if (strcasecmp(extension, "jpg") == 0 || strcasecmp(extension, "jpeg") == 0) {
+					printf("returning jpeg\n");
+					return "Content-Type: image/jpeg";
+				} else
+					if (strcasecmp(extension, "gif") == 0) {
+						return "Content-Type: image/gif";
+					}
+	}
+
+}
+
 void doGet(char *path, int hSocket, char *webRoot) {
-	char *pBuffer = malloc(sizeof(char) * 10000);
+	char *pBuffer = malloc(sizeof(char) * 10000000);
 	pBuffer[0] = '\0';
 	char *absolutePath = malloc(sizeof(char) * 10000);
 	strcat(absolutePath, webRoot);
@@ -122,18 +150,24 @@ void doGet(char *path, int hSocket, char *webRoot) {
 		addResponse(pBuffer, "Error 404 Not Found");
 	} else {
 		char c;
-		char *bodyBuffer = malloc(sizeof(char) * 10000);
+		char *bodyBuffer = malloc(sizeof(char) * 10000000);
 		int bodyLen = 0;
 		while (!feof(f)) {
 			fscanf(f, "%c",&c);
 			//printf("%c",c);
 			bodyBuffer[bodyLen++] = c;
 		};
+		printf("\nnow EOF\n");
 		bodyBuffer[bodyLen] ='\0';
+		printf("bodyBuffer = %s\n", bodyBuffer);
+		printf("bodyLen = %d\n", bodyLen);
 		addResponse(pBuffer, "HTTP/1.1 200 OK");
 			addResponse(pBuffer, "Date: Mon, 25 Oct 2010 07:54:17 GMT");
 			addResponse(pBuffer, "Connection: keep-alive");
-			addResponse(pBuffer, "Content-Type: text/plain");
+			char *contentType = getContentType(path);
+			printf("contentType = %s\n", contentType);
+			addResponse(pBuffer, contentType);
+			//addResponse(pBuffer, "Content-Type: text/plain");
 			char *contentLength = malloc(sizeof(char) * 100);
 			sprintf(contentLength, "Content-Length: %d", bodyLen);
 			//printf("contentLength = %s\n", contentLength);
@@ -144,6 +178,7 @@ void doGet(char *path, int hSocket, char *webRoot) {
 
 	//addResponseEnding(pBuffer);
 	//addResponseEnding(pBuffer);
+	printf("pBuffer = %s\n", pBuffer);
 	write(hSocket, pBuffer, strlen(pBuffer) + 1);
 
 	if (f != NULL)
