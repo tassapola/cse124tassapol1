@@ -108,16 +108,47 @@ void addResponseEnding(char *buffer) {
 void doGet(char *path, int hSocket, char *webRoot) {
 	char *pBuffer = malloc(sizeof(char) * 10000);
 	pBuffer[0] = '\0';
-	addResponse(pBuffer, "HTTP/1.1 200 OK");
-	addResponse(pBuffer, "Date: Mon, 25 oct 2010 07:54:17 GMT");
-	addResponse(pBuffer, "Connection: keep-alive");
-	addResponse(pBuffer, "Content-Type: text/plain");
-	addResponse(pBuffer, "Content-Length: 3");
-	addResponseEnding(pBuffer);
-	addResponse(pBuffer, "abc");
+	char *absolutePath = malloc(sizeof(char) * 10000);
+	strcat(absolutePath, webRoot);
+	strcat(absolutePath, path);
+	printf("absolutePath = %s\n", absolutePath);
+	FILE *f = fopen(absolutePath, "r");
+	if (f == NULL) {
+		addResponse(pBuffer, "HTTP/1.1 404 Not Found");
+		addResponse(pBuffer, "Connection: close");
+		addResponse(pBuffer, "Content-Type: text/html");
+		addResponse(pBuffer, "Content-Length: 19");
+		addResponseEnding(pBuffer);
+		addResponse(pBuffer, "Error 404 Not Found");
+	} else {
+		char c;
+		char *bodyBuffer = malloc(sizeof(char) * 10000);
+		int bodyLen = 0;
+		while (!feof(f)) {
+			fscanf(f, "%c",&c);
+			//printf("%c",c);
+			bodyBuffer[bodyLen++] = c;
+		};
+		bodyBuffer[bodyLen] ='\0';
+		addResponse(pBuffer, "HTTP/1.1 200 OK");
+			addResponse(pBuffer, "Date: Mon, 25 Oct 2010 07:54:17 GMT");
+			addResponse(pBuffer, "Connection: keep-alive");
+			addResponse(pBuffer, "Content-Type: text/plain");
+			char *contentLength = malloc(sizeof(char) * 100);
+			sprintf(contentLength, "Content-Length: %d", bodyLen);
+			//printf("contentLength = %s\n", contentLength);
+			addResponse(pBuffer, contentLength);
+			addResponseEnding(pBuffer);
+			addResponse(pBuffer, bodyBuffer);
+	}
+
 	//addResponseEnding(pBuffer);
 	//addResponseEnding(pBuffer);
 	write(hSocket, pBuffer, strlen(pBuffer) + 1);
+
+	if (f != NULL)
+		fclose(f);
+
 /*
 	if (close(hSocket) == SOCKET_ERROR) {
 		printf("could not close socket\n");
