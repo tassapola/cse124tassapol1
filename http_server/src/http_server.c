@@ -24,19 +24,28 @@ int main(void) {
 	int hSocket, hServerSocket;
 	struct sockaddr_in address;
 
-	int port = 30001;
-	hServerSocket = socket(AF_INET, SOCK_STREAM, 0);
-	if (hServerSocket == SOCKET_ERROR) {
-		printf("Could not make a socket\n");
-		return EXIT_SUCCESS;
-	}
-	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons(port);
-	address.sin_family = AF_INET;
+	int port;
+	for (port = 30000; port < 30010; port ++) {
+		hServerSocket = socket(AF_INET, SOCK_STREAM, 0);
+		if (hServerSocket == SOCKET_ERROR) {
+			printf("Could not make a socket\n");
+			return EXIT_SUCCESS;
+		}
+		address.sin_addr.s_addr = INADDR_ANY;
+		address.sin_port = htons(port);
+		address.sin_family = AF_INET;
 
-	printf("binding to port %d\n", port);
-	if (bind(hServerSocket, (struct sockaddr *) &address, sizeof(address)) == SOCKET_ERROR) {
-		printf("could not bind socket to host\n");
+
+		if (bind(hServerSocket, (struct sockaddr *) &address, sizeof(address)) == SOCKET_ERROR) {
+			//printf("could not bind socket to host\n");
+			//return EXIT_SUCCESS;
+		} else {
+			printf("successfully binding to port %d\n", port);
+			break;
+		}
+	}
+	if (port == 30011) {
+		printf("could not bind socket to any port\n");
 		return EXIT_SUCCESS;
 	}
 	int nAddressSize = sizeof(struct sockaddr_in);
@@ -44,7 +53,7 @@ int main(void) {
 	printf("opened socket as fd (%d) on port (%d) for stream i/o\n", hServerSocket,
 	 	   ntohs(address.sin_port)
 		  );
-	printf("making a listen queue of %d elements", QUEUE_SIZE);
+	printf("making a listen queue of %d elements\n", QUEUE_SIZE);
 	if (listen(hServerSocket, QUEUE_SIZE) == SOCKET_ERROR) {
 		printf("could not listen\n");
 		return EXIT_SUCCESS;
@@ -56,7 +65,7 @@ int main(void) {
 		printf("got a connection\n");
 		pid_t pId = fork();
 		if (pId != 0) {
-			handleConnection(hSocket);
+			handleNewConnection(hSocket);
 		}
 		/*
 		char pBuffer[1000];
