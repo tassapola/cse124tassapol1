@@ -20,6 +20,7 @@ struct FirstCmd {
 
 char **cmdList;
 int cmdListSize;
+int acceptingConn;
 
 void splitToArray(char *curRequest) {
 	printf("starting split to array\n");
@@ -144,7 +145,8 @@ char *getContentType(char *path) {
 
 }
 
-void doGet(char *path, int hSocket, char *webRoot) {
+void doGet(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
+	char *path = firstCmd.path;
 	char *pBuffer = malloc(sizeof(char) * 10000000);
 	pBuffer[0] = '\0';
 	int pBufferLen = 0;
@@ -251,7 +253,7 @@ void processHttpRequest(char *request, int hSocket, char *webRoot) {
 		//printf("httpVersion = %s\n", firstCmd.httpVersion);
 
 		if (strcmp(firstCmd.httpOp, "GET") == 0) {
-			doGet(firstCmd.path, hSocket, webRoot);
+			doGet(firstCmd, hSocket, webRoot);
 		}
 	}
 }
@@ -261,27 +263,32 @@ void handleNewConnection(int hSocket, char *webRoot) {
 	char *httpRequest = malloc(BUFFER_SIZE * sizeof(char));
 
 	char pBuffer[1000];
-	//strcpy(pBuffer, "hahah1234");
-	//printf("sending %s to client\n", pBuffer);
-	int size = read(hSocket, pBuffer, BUFFER_SIZE);
-	int i;
-	for (i =0; i < size; i++)
-		printf("%d,", pBuffer[i]);
-	pBuffer[size] = '\0';
-	printf("\n");
-	printf("%d %s--end\n", size, pBuffer);
+	acceptingConn = 1;
+	while (acceptingConn) {
+		//strcpy(pBuffer, "hahah1234");
+		//printf("sending %s to client\n", pBuffer);
+		int size = read(hSocket, pBuffer, BUFFER_SIZE);
+		if (read > 0) {
+			int i;
+			for (i =0; i < size; i++)
+				printf("%d,", pBuffer[i]);
+			pBuffer[size] = '\0';
+			printf("\n");
+			printf("%d %s--end\n", size, pBuffer);
 
-	char *newHttpRequest = malloc(BUFFER_SIZE * sizeof(char));
-	newHttpRequest = strncpy(newHttpRequest, pBuffer, size);
-	newHttpRequest[size] = '\0';
-	httpRequest = strcat(httpRequest, newHttpRequest);
-	printf("%s\n", httpRequest);
-	processHttpRequest(httpRequest, hSocket, webRoot);
+			char *newHttpRequest = malloc(BUFFER_SIZE * sizeof(char));
+			newHttpRequest = strncpy(newHttpRequest, pBuffer, size);
+			newHttpRequest[size] = '\0';
+			httpRequest = strcat(httpRequest, newHttpRequest);
+			printf("%s\n", httpRequest);
+			processHttpRequest(httpRequest, hSocket, webRoot);
 
-	/*
-	if (close(hSocket) == SOCKET_ERROR) {
-		printf("could not close socket\n");
-	} else {
-		printf("socket closed\n");
-	}*/
+			/*
+			if (close(hSocket) == SOCKET_ERROR) {
+				printf("could not close socket\n");
+			} else {
+				printf("socket closed\n");
+			}*/
+		}
+	}
 }
