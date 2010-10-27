@@ -23,7 +23,6 @@ int cmdListSize;
 int acceptingConn;
 
 void splitToArray(char *curRequest) {
-	//printf("starting split to array\n");
 	cmdList = malloc(sizeof(char *) * 100);
 	cmdListSize = 0;
 	int i;
@@ -48,16 +47,11 @@ void splitToArray(char *curRequest) {
 		cmdListSize++;
 
 	}
-	//printf("DEBUG\n");
-	//for (i = 0; i < cmdListSize; i++) {
-	//	printf("%s\n", cmdList[i]);
-	//}
 }
 
 char *extractFirstWord(char **ptr) {
 	char *s = *ptr;
 	char *blankPos = strchrnul(s, ' '); //return pointer to space or to end of string
-	//printf("blankPos = %s, s = %s\n",blankPos, s);
 	char *word = malloc(sizeof(char) * (strlen(s) + 1));
 	strncpy(word, s, blankPos - s);
 	word[blankPos - s + 1] = '\0';
@@ -66,7 +60,6 @@ char *extractFirstWord(char **ptr) {
 }
 
 struct FirstCmd processFirstCmd() {
-	//printf("starting processing of first command\n");
 	char *firstCmdCopy = malloc(sizeof(char) * (strlen(cmdList[0]) + 1));
 	strcpy(firstCmdCopy, cmdList[0]);
 	struct FirstCmd result;
@@ -75,22 +68,6 @@ struct FirstCmd processFirstCmd() {
 	result.path = extractFirstWord(&firstCmdCopy);
 	result.httpVersion = extractFirstWord(&firstCmdCopy);
 	return result;
-	/*
-	char *blankPos = strchr(firstCmdCopy, ' ');
-	printf("blankPos = %s, firstCmdCopy = %s\n",blankPos, firstCmdCopy);
-	char *httpOp = malloc(sizeof(char) * (strlen(curCmd[0]) + 1));
-	strncpy(httpOp, firstCmdCopy, blankPos - firstCmdCopy);
-	httpOp[blankPos - firstCmdCopy + 1] = '\0';
-	*/
-	/*
-	char *httpOp = strtok(firstCmdCopy, " ");
-	printf("httpOp = %s\n", httpOp);
-	httpOp[0] = 'z';
-	printf("httpOp = %s\n", httpOp);
-	printf("firstCmdCopy = %s\n", firstCmdCopy);
-	char *path= strtok(firstCmdCopy, " ");
-		printf("path = %s\n", path);
-	*/
 }
 
 void addResponse(char *buffer, int *bufferLen, char *text, int textLen) {
@@ -100,17 +77,10 @@ void addResponse(char *buffer, int *bufferLen, char *text, int textLen) {
 	}
 	(*bufferLen) += textLen;
 	buffer[*bufferLen] = '\0';
-	//strcat(buffer, text);
 	addCRLF(buffer, bufferLen);
 }
 
 void addCRLF(char *buffer, int *bufferLen) {
-	/*char *ending = malloc(sizeof(char) * 3);
-	ending[0] = 13;
-	ending[1] = 10;
-	ending[2] = '\0';
-	*/
-	//strcat(buffer, ending);
 	buffer[*bufferLen] = 13;
 	buffer[(*bufferLen) + 1] = 10;
 	buffer[(*bufferLen) + 2] = '\0';
@@ -118,16 +88,13 @@ void addCRLF(char *buffer, int *bufferLen) {
 }
 
 char *getContentType(char *path) {
-	//printf("starting getcontentType\n");
 	char *res = malloc(sizeof(char) * 10000);
 	char *dot = strchr(path, '.');
-	//printf("dot = %s\n", dot);
 	if (dot == NULL) {
 		return "Content-Type: text/html";
 	} else {
 		char *extension = malloc(sizeof(char) * 10000);
 		strncpy(extension, (dot+1), (path+strlen(path) - dot));
-		//printf("extension = %s\n", extension);
 		if (strcasecmp(extension, "htm") == 0 || strcasecmp(extension, "html") == 0) {
 			return "Content-Type: text/html";
 		} else
@@ -135,7 +102,6 @@ char *getContentType(char *path) {
 				return "Content-Type: text/plain";
 			} else
 				if (strcasecmp(extension, "jpg") == 0 || strcasecmp(extension, "jpeg") == 0) {
-					//printf("returning jpeg\n");
 					return "Content-Type: image/jpeg";
 				} else
 					if (strcasecmp(extension, "gif") == 0) {
@@ -153,7 +119,6 @@ void doGet(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 	char *absolutePath = malloc(sizeof(char) * 10000);
 	strcat(absolutePath, webRoot);
 	strcat(absolutePath, path);
-	//printf("absolutePath = %s\n", absolutePath);
 	FILE *f = fopen(absolutePath, "r");
 	if (f == NULL) {
 		char *line;
@@ -176,13 +141,9 @@ void doGet(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 		int bodyLen = 0;
 		while (!feof(f)) {
 			fscanf(f, "%c",&c);
-			//printf("%c",c);
 			bodyBuffer[bodyLen++] = c;
 		};
-		//printf("\nnow EOF\n");
 		bodyBuffer[bodyLen] ='\0';
-		//printf("bodyBuffer = %s\n", bodyBuffer);
-		//printf("bodyLen = %d\n", bodyLen);
 		char *line;
 		line = malloc(sizeof(char) * 100);
 		strcpy(line, firstCmd.httpVersion);
@@ -193,35 +154,17 @@ void doGet(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 		line = "Connection: keep-alive";
 		addResponse(pBuffer, &pBufferLen, line, strlen(line));
 			char *contentType = getContentType(path);
-			//printf("contentType = %s\n", contentType);
 			addResponse(pBuffer, &pBufferLen, contentType, strlen(contentType));
-			//addResponse(pBuffer, "Content-Type: text/plain");
 			char *contentLength = malloc(sizeof(char) * 100);
 			sprintf(contentLength, "Content-Length: %d", bodyLen);
-			//printf("contentLength = %s\n", contentLength);
 			addResponse(pBuffer, &pBufferLen, contentLength, strlen(contentLength));
 			addCRLF(pBuffer, &pBufferLen);
 			addResponse(pBuffer, &pBufferLen, bodyBuffer, bodyLen);
 	}
-
-	//addResponseEnding(pBuffer);
-	//addResponseEnding(pBuffer);
-	//printf("pBuffer = %s\n", pBuffer);
-	printf("pBufferLen = %d\n", pBufferLen);
+	printf("  responding to GET command\n");
 	write(hSocket, pBuffer, pBufferLen);
-
 	if (f != NULL)
 		fclose(f);
-
-/*
-	if (close(hSocket) == SOCKET_ERROR) {
-		printf("could not close socket\n");
-		return EXIT_SUCCESS;
-	} else {
-		printf("closing socket is successful\n");
-	}
-	*/
-	//printf("ending doGet\n");
 }
 
 void processHttpRequest(char *request, int hSocket, char *webRoot) {
@@ -230,7 +173,6 @@ void processHttpRequest(char *request, int hSocket, char *webRoot) {
 	int found = -1;
 	for (i=0; i < size-3; i++) {
 		if (request[i] == 13 && request[i+1] == 10 && request[i+2] == 13 && request[i+3] == 10) {
-			//printf("found CRLF at %d\n", i);
 			found = i;
 			break;
 		}
@@ -246,15 +188,9 @@ void processHttpRequest(char *request, int hSocket, char *webRoot) {
 		strncpy(request, &request[newStart], (numChars + 1) * sizeof(char));
 		request[numChars] = '\0';
 
-		//printf("DEBUG\n");
-		//printf("%s-%s\n", curCommands, commands);
-		//printf("size of commands = %d\n", strlen(commands));
 
 		splitToArray(curRequest);
 		struct FirstCmd firstCmd = processFirstCmd();
-		//printf("httpOp = %s\n", firstCmd.httpOp);
-		//printf("path = %s\n", firstCmd.path);
-		//printf("httpVersion = %s\n", firstCmd.httpVersion);
 
 		if (strcmp(firstCmd.httpOp, "GET") == 0) {
 			doGet(firstCmd, hSocket, webRoot);
@@ -263,36 +199,23 @@ void processHttpRequest(char *request, int hSocket, char *webRoot) {
 }
 
 void handleNewConnection(int hSocket, char *webRoot) {
-	//printf("hsocket %d\n", hSocket);
 	char *httpRequest = malloc(BUFFER_SIZE * sizeof(char));
 
 	char pBuffer[1000];
 	acceptingConn = 1;
 	while (acceptingConn) {
-		//strcpy(pBuffer, "hahah1234");
-		//printf("sending %s to client\n", pBuffer);
 		int size = read(hSocket, pBuffer, BUFFER_SIZE);
 		if (read > 0) {
 			int i;
-			for (i =0; i < size; i++)
-				printf("%d,", pBuffer[i]);
+
 			pBuffer[size] = '\0';
-			printf("\n");
-			printf("%d %s--end\n", size, pBuffer);
 
 			char *newHttpRequest = malloc(BUFFER_SIZE * sizeof(char));
 			newHttpRequest = strncpy(newHttpRequest, pBuffer, size);
 			newHttpRequest[size] = '\0';
 			httpRequest = strcat(httpRequest, newHttpRequest);
-			printf("%s\n", httpRequest);
-			processHttpRequest(httpRequest, hSocket, webRoot);
 
-			/*
-			if (close(hSocket) == SOCKET_ERROR) {
-				printf("could not close socket\n");
-			} else {
-				printf("socket closed\n");
-			}*/
+			processHttpRequest(httpRequest, hSocket, webRoot);
 		}
 	}
 }
