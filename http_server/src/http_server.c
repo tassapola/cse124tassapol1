@@ -38,8 +38,7 @@ int main(void) {
 
 
 		if (bind(hServerSocket, (struct sockaddr *) &address, sizeof(address)) == SOCKET_ERROR) {
-			//printf("could not bind socket to host\n");
-			//return EXIT_SUCCESS;
+
 		} else {
 			printf("successfully binding to port %d\n", port);
 			break;
@@ -51,10 +50,6 @@ int main(void) {
 	}
 	int nAddressSize = sizeof(struct sockaddr_in);
 	getsockname(hServerSocket, (struct sockaddr *) &address, (socklen_t *) &nAddressSize);
-	printf("opened socket as fd (%d) on port (%d) for stream i/o\n", hServerSocket,
-	 	   ntohs(address.sin_port)
-		  );
-	printf("making a listen queue of %d elements\n", QUEUE_SIZE);
 	if (listen(hServerSocket, QUEUE_SIZE) == SOCKET_ERROR) {
 		printf("could not listen\n");
 		return EXIT_SUCCESS;
@@ -63,33 +58,11 @@ int main(void) {
 	while (1) {
 		printf("waiting for a connection\n");
 		hSocket = accept(hServerSocket,(struct sockaddr *) &address, (socklen_t *) &nAddressSize);
-		printf("got a connection\n");
+		printf("  got a connection\n");
 		pid_t pId = fork();
 		if (pId != 0) {
 			handleNewConnection(hSocket, webRoot);
 		}
-		/*
-		char pBuffer[1000];
-		//strcpy(pBuffer, "hahah1234");
-		printf("sending %s to client\n", pBuffer);
-		int size = read(hSocket, pBuffer, BUFFER_SIZE);
-		int i;
-		for (i =0; i < size; i++)
-			printf("%d,", pBuffer[i]);
-		printf("\n");
-		printf("%d %s--end\n", size, pBuffer);
-
-		char *newCommands = malloc(BUFFER_SIZE * sizeof(char));
-		newCommands = strncpy(newCommands, pBuffer, size);
-		newCommands[size] = '\0';
-		commands = strcat(commands, newCommands);
-		printf("%s\n", commands);
-		//write(hSocket, pBuffer, strlen(pBuffer) + 1);
-		if (close(hSocket) == SOCKET_ERROR) {
-			printf("could not close socket");
-			return EXIT_SUCCESS;
-		}
-		*/
 	}
 	return EXIT_SUCCESS;
 }
