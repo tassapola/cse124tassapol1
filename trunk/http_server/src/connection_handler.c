@@ -10,13 +10,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <string.h>
+#include "util.h"
 
 #define SOCKET_ERROR	-1
 #define BUFFER_SIZE		100000
 
-struct FirstCmd {
-	char *httpOp, *path, *httpVersion;
-};
+
 
 char **cmdList;
 int cmdListSize;
@@ -49,16 +48,6 @@ void splitToArray(char *curRequest) {
 	}
 }
 
-char *extractFirstWord(char **ptr) {
-	char *s = *ptr;
-	char *blankPos = strchrnul(s, ' '); //return pointer to space or to end of string
-	char *word = malloc(sizeof(char) * (strlen(s) + 1));
-	strncpy(word, s, blankPos - s);
-	word[blankPos - s + 1] = '\0';
-	*ptr = blankPos + 1;
-	return word;
-}
-
 struct FirstCmd processFirstCmd() {
 	char *firstCmdCopy = malloc(sizeof(char) * (strlen(cmdList[0]) + 1));
 	strcpy(firstCmdCopy, cmdList[0]);
@@ -68,47 +57,6 @@ struct FirstCmd processFirstCmd() {
 	result.path = extractFirstWord(&firstCmdCopy);
 	result.httpVersion = extractFirstWord(&firstCmdCopy);
 	return result;
-}
-
-void addResponse(char *buffer, int *bufferLen, char *text, int textLen) {
-	int i;
-	for (i=0; i < textLen; i++) {
-		buffer[i + (*bufferLen)] = text[i];
-	}
-	(*bufferLen) += textLen;
-	buffer[*bufferLen] = '\0';
-	addCRLF(buffer, bufferLen);
-}
-
-void addCRLF(char *buffer, int *bufferLen) {
-	buffer[*bufferLen] = 13;
-	buffer[(*bufferLen) + 1] = 10;
-	buffer[(*bufferLen) + 2] = '\0';
-	(*bufferLen) += 2;
-}
-
-char *getContentType(char *path) {
-	char *res = malloc(sizeof(char) * 10000);
-	char *dot = strchr(path, '.');
-	if (dot == NULL) {
-		return "Content-Type: text/html";
-	} else {
-		char *extension = malloc(sizeof(char) * 10000);
-		strncpy(extension, (dot+1), (path+strlen(path) - dot));
-		if (strcasecmp(extension, "htm") == 0 || strcasecmp(extension, "html") == 0) {
-			return "Content-Type: text/html";
-		} else
-			if (strcasecmp(extension, "txt") == 0) {
-				return "Content-Type: text/plain";
-			} else
-				if (strcasecmp(extension, "jpg") == 0 || strcasecmp(extension, "jpeg") == 0) {
-					return "Content-Type: image/jpeg";
-				} else
-					if (strcasecmp(extension, "gif") == 0) {
-						return "Content-Type: image/gif";
-					}
-	}
-
 }
 
 void doGet(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
