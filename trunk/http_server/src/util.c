@@ -51,9 +51,17 @@ char *getContentType(char *path) {
 char *extractFirstWord(char **ptr) {
 	char *s = *ptr;
 	char *blankPos = strchrnul(s, ' '); //return pointer to space or to end of string
+	//printf("s = %s, blankPos = %s\n", s, blankPos);
 	char *word = malloc(sizeof(char) * (strlen(s) + 1));
 	strncpy(word, s, blankPos - s);
+	//printf("blankPos - s = %d\n", blankPos - s);
 	word[blankPos - s + 1] = '\0';
+	if (strlen(word) > 0) {
+		char c = word[strlen(word)-1];
+		if (!((c >= 'A' && c <= 'Z') || (c >='a' && c <= 'z') || (c >='0' && c <= '9')))
+			word[strlen(word)-1] = '\0';
+	}
+	//printf("word = %s\n", word);
 	*ptr = blankPos + 1;
 	return word;
 }

@@ -54,12 +54,14 @@ struct FirstCmd processFirstCmd() {
 	struct FirstCmd result;
 
 	result.httpOp = extractFirstWord(&firstCmdCopy);
+	//printf("firstCmdCopy = %s\n", firstCmdCopy);
 	result.path = extractFirstWord(&firstCmdCopy);
+	//printf("path = %s\n", result.path);
 	result.httpVersion = extractFirstWord(&firstCmdCopy);
 	return result;
 }
 
-void doGet(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
+void doGetOrHead(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 	char *path = firstCmd.path;
 	char *pBuffer = malloc(sizeof(char) * 10000000);
 	pBuffer[0] = '\0';
@@ -67,7 +69,13 @@ void doGet(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 	char *absolutePath = malloc(sizeof(char) * 10000);
 	strcat(absolutePath, webRoot);
 	strcat(absolutePath, path);
+	int isGet;
+	if (strcmp(firstCmd.httpOp, "GET") == 0)
+		isGet = 1;
+	else isGet = 0;
 	FILE *f = fopen(absolutePath, "r");
+	//printf("absolutePath = %s\n", absolutePath);
+	//printf("f = %d\n", f);
 	if (f == NULL) {
 		char *line;
 		line = malloc(sizeof(char) * 100);
@@ -81,8 +89,10 @@ void doGet(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 		line = "Content-Length: 19";
 		addResponse(pBuffer, &pBufferLen, line, strlen(line));
 		addCRLF(pBuffer, &pBufferLen);
-		line = "Error 404 Not Found";
-		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		if (isGet) {
+			line = "Error 404 Not Found";
+			addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		}
 	} else {
 		char c;
 		char *bodyBuffer = malloc(sizeof(char) * 10000000);
@@ -107,12 +117,17 @@ void doGet(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 			sprintf(contentLength, "Content-Length: %d", bodyLen);
 			addResponse(pBuffer, &pBufferLen, contentLength, strlen(contentLength));
 			addCRLF(pBuffer, &pBufferLen);
-			addResponse(pBuffer, &pBufferLen, bodyBuffer, bodyLen);
+			if (isGet)
+				addResponse(pBuffer, &pBufferLen, bodyBuffer, bodyLen);
 	}
-	printf("  responding to GET command\n");
-	write(hSocket, pBuffer, pBufferLen);
+	if (isGet)
+		printf("  responding to GET command\n");
+	else
+		printf("  responding to HEAD command\n");
 	if (f != NULL)
 		fclose(f);
+	write(hSocket, pBuffer, pBufferLen);
+
 }
 
 void processHttpRequest(char *request, int hSocket, char *webRoot) {
@@ -140,9 +155,9 @@ void processHttpRequest(char *request, int hSocket, char *webRoot) {
 		splitToArray(curRequest);
 		struct FirstCmd firstCmd = processFirstCmd();
 
-		if (strcmp(firstCmd.httpOp, "GET") == 0) {
-			doGet(firstCmd, hSocket, webRoot);
-		}
+		if (strcmp(firstCmd.httpOp, "GET") == 0 || strcmp(firstCmd.httpOp, "HEAD") == 0)
+			doGetOrHead(firstCmd, hSocket, webRoot);
+
 	}
 }
 
