@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <string.h>
 #include "util.h"
+#include <sys/stat.h>
 
 #define SOCKET_ERROR	-1
 #define BUFFER_SIZE		100000
@@ -113,7 +114,22 @@ void doDelete(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 	write(hSocket, pBuffer, pBufferLen);
 }
 
+void mkDirsIfNeeded(char *absolutePath) {
+	char *dir = malloc(sizeof(char) * 10000);
+	mode_t mode = S_IRWXU;
+	int i;
+	for (i=0; i < strlen(absolutePath); i++) {
+		dir[i] = absolutePath[i];
+		dir[i+1] = '\0';
+		if (dir[i] == '/') {
+			mkdir(dir, mode);
+		}
+	}
+}
+
 void doPut(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
+	if (DEBUG)
+		printf("starting doPut\n");
 	char *pBuffer = malloc(sizeof(char) * 10000000);
 	pBuffer[0] = '\0';
 	int pBufferLen = 0;
@@ -123,13 +139,18 @@ void doPut(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 	strcat(absolutePath, firstCmd.path);
 	int fileExist = 0;
 	FILE *f = fopen(absolutePath, "r");
-	if (f != NULL)
+	printf("f == NULL = %d\n", f == NULL);
+	if (f != NULL) {
 		fileExist = 1;
-	else
+		if (DEBUG) printf("trying to close a file, f = %d\n", f);
 		fclose(f);
+	}
+	if (DEBUG) printf("after closing a file\n");
+	mkDirsIfNeeded(absolutePath);
 	f = fopen(absolutePath, "w");
 	if (DEBUG) {
 		printf("absolutePath = %s\n", absolutePath);
+		printf("f = %d\n", f);
 	}
 	char *content = cmdList[cmdListSize-1];
 	int i;
@@ -301,6 +322,9 @@ void processHttpRequest(char *request, int hSocket, char *webRoot) {
 		}
 		struct FirstCmd firstCmd = processFirstCmd();
 
+		if (DEBUG) {
+			printf("httpOp = %s\n", firstCmd.httpOp);
+		}
 		if (strcmp(firstCmd.httpOp, "GET") == 0 || strcmp(firstCmd.httpOp, "HEAD") == 0)
 			doGetOrHead(firstCmd, hSocket, webRoot);
 		else if (strcmp(firstCmd.httpOp, "DELETE") == 0)
