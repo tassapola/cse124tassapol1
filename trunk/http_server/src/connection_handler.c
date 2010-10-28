@@ -49,6 +49,9 @@ void splitToArray(char *curRequest) {
 
 	if (DEBUG) {
 		int i;
+		printf("printing out curRequest\n");
+		printf("%s\n", curRequest);
+		printf("printing out cmd list\n");
 		for (i=0; i < cmdListSize; i++) {
 			printf("%s\n", cmdList[i]);
 		}
