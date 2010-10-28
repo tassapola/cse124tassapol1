@@ -113,6 +113,49 @@ void doDelete(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 	write(hSocket, pBuffer, pBufferLen);
 }
 
+void doPut(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
+	char *pBuffer = malloc(sizeof(char) * 10000000);
+	pBuffer[0] = '\0';
+	int pBufferLen = 0;
+	char *absolutePath = malloc(sizeof(char) * 10000);
+	absolutePath[0] = '\0';
+	strcat(absolutePath, webRoot);
+	strcat(absolutePath, firstCmd.path);
+	int fileExist = 0;
+	FILE *f = fopen(absolutePath, "r");
+	if (f != NULL)
+		fileExist = 1;
+	else
+		fclose(f);
+	f = fopen(absolutePath, "w");
+	if (DEBUG) {
+		printf("absolutePath = %s\n", absolutePath);
+	}
+	char *content = cmdList[cmdListSize-1];
+	int i;
+	for (i=0; i < strlen(content); i++) {
+		fprintf(f, "%c", content[i]);
+	}
+	fclose(f);
+
+	char *line;
+	line = malloc(sizeof(char) * 100);
+	strcpy(line, firstCmd.httpVersion);
+	if (!fileExist)
+		strcat(line, " 201 Created");
+	else
+		strcat(line, " 200 OK");
+	addResponse(pBuffer, &pBufferLen, line, strlen(line));
+	line = "Connection: close";
+	addResponse(pBuffer, &pBufferLen, line, strlen(line));
+	line = "Content-Length: 0";
+	addResponse(pBuffer, &pBufferLen, line, strlen(line));
+	addCRLF(pBuffer, &pBufferLen);
+	//if (DEBUG)
+	//	printf("pBuffer = %s\n", pBuffer);
+	write(hSocket, pBuffer, pBufferLen);
+}
+
 void doTrace(struct FirstCmd firstCmd, int hSocket) {
 	char *pBuffer = malloc(sizeof(char) * 10000000);
 	pBuffer[0] = '\0';
@@ -264,6 +307,8 @@ void processHttpRequest(char *request, int hSocket, char *webRoot) {
 			doDelete(firstCmd, hSocket, webRoot);
 		else if (strcmp(firstCmd.httpOp, "TRACE") == 0)
 			doTrace(firstCmd, hSocket);
+		else if (strcmp(firstCmd.httpOp, "PUT") == 0)
+			doPut(firstCmd, hSocket, webRoot);
 	}
 }
 
@@ -275,6 +320,7 @@ void handleNewConnection(int hSocket, char *webRoot) {
 	while (acceptingConn) {
 		int size = read(hSocket, pBuffer, BUFFER_SIZE);
 		if (read > 0) {
+			//printf("read > 0");
 			int i;
 
 			pBuffer[size] = '\0';
@@ -285,6 +331,8 @@ void handleNewConnection(int hSocket, char *webRoot) {
 			httpRequest = strcat(httpRequest, newHttpRequest);
 
 			processHttpRequest(httpRequest, hSocket, webRoot);
+		} else {
+			//printf("read == 0");
 		}
 	}
 }
