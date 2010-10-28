@@ -355,8 +355,15 @@ void handleNewConnection(int hSocket, char *webRoot) {
 			httpRequest = strcat(httpRequest, newHttpRequest);
 
 			processHttpRequest(httpRequest, hSocket, webRoot);
+			if (strcmp(firstCmd.httpVersion("HTTP/1.0") == 0) {
+				acceptingConn = 0;
+			}
 		} else {
 			//printf("read == 0");
 		}
 	}
+	close(fsocket);
 }
+
+
+
