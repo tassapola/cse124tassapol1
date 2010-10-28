@@ -14,7 +14,7 @@
 
 #define SOCKET_ERROR	-1
 #define BUFFER_SIZE		100000
-
+#define DEBUG			1
 
 
 char **cmdList;
@@ -46,6 +46,13 @@ void splitToArray(char *curRequest) {
 		cmdListSize++;
 
 	}
+
+	if (DEBUG) {
+		int i;
+		for (i=0; i < cmdListSize; i++) {
+			printf("%s\n", cmdList[i]);
+		}
+	}
 }
 
 struct FirstCmd processFirstCmd() {
@@ -61,12 +68,55 @@ struct FirstCmd processFirstCmd() {
 	return result;
 }
 
+void doDelete(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
+	char *pBuffer = malloc(sizeof(char) * 10000000);
+	pBuffer[0] = '\0';
+	int pBufferLen = 0;
+	char *absolutePath = malloc(sizeof(char) * 10000);
+	absolutePath[0] = '\0';
+	strcat(absolutePath, webRoot);
+	strcat(absolutePath, firstCmd.path);
+	int result = remove(absolutePath);
+	if (DEBUG) {
+		printf("absolutePath = %s\n", absolutePath);
+		printf("result = %d\n", result);
+	}
+	if (result == 0) {
+		//successful
+		char *line;
+		line = malloc(sizeof(char) * 100);
+		strcpy(line, firstCmd.httpVersion);
+		strcat(line, " 200 OK");
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		line = "Connection: close";
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		line = "Content-Length: 0";
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		addCRLF(pBuffer, &pBufferLen);
+	} else {
+		char *line;
+		line = malloc(sizeof(char) * 100);
+		strcpy(line, firstCmd.httpVersion);
+		strcat(line, " 202 Accepted");
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		line = "Connection: close";
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		line = "Content-Length: 0";
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		addCRLF(pBuffer, &pBufferLen);
+	}
+	//if (DEBUG)
+	//	printf("pBuffer = %s\n", pBuffer);
+	write(hSocket, pBuffer, pBufferLen);
+}
+
 void doGetOrHead(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 	char *path = firstCmd.path;
 	char *pBuffer = malloc(sizeof(char) * 10000000);
 	pBuffer[0] = '\0';
 	int pBufferLen = 0;
 	char *absolutePath = malloc(sizeof(char) * 10000);
+	absolutePath[0] = '\0';
 	strcat(absolutePath, webRoot);
 	strcat(absolutePath, path);
 	int isGet;
@@ -157,7 +207,8 @@ void processHttpRequest(char *request, int hSocket, char *webRoot) {
 
 		if (strcmp(firstCmd.httpOp, "GET") == 0 || strcmp(firstCmd.httpOp, "HEAD") == 0)
 			doGetOrHead(firstCmd, hSocket, webRoot);
-
+		else if (strcmp(firstCmd.httpOp, "DELETE") == 0)
+			doDelete(firstCmd, hSocket, webRoot);
 	}
 }
 
