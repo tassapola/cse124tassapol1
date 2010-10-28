@@ -237,6 +237,25 @@ void processHttpRequest(char *request, int hSocket, char *webRoot) {
 
 
 		splitToArray(curRequest);
+		if (strstr(cmdList[cmdListSize-1], "Content-Length: ") != NULL) {
+			char *numS = cmdList[cmdListSize-1] + 16;
+			int len = atoi(numS);
+			//printf("content length = %d\n", len);
+			char *line = malloc(sizeof(char) * BUFFER_SIZE);
+			strncpy(line, request, len);
+			line[len] = '\0';
+			request = request + len;
+
+
+			cmdList[cmdListSize++] = line;
+			if (DEBUG) {
+				printf("line = %s\n", line);
+				printf("request = %s\n", request);
+				int i;
+				for (i = 0; i < cmdListSize; i++)
+					printf("%s\n", cmdList[i]);
+			}
+		}
 		struct FirstCmd firstCmd = processFirstCmd();
 
 		if (strcmp(firstCmd.httpOp, "GET") == 0 || strcmp(firstCmd.httpOp, "HEAD") == 0)
