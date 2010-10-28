@@ -110,6 +110,37 @@ void doDelete(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 	write(hSocket, pBuffer, pBufferLen);
 }
 
+void doTrace(struct FirstCmd firstCmd, int hSocket) {
+	char *pBuffer = malloc(sizeof(char) * 10000000);
+	pBuffer[0] = '\0';
+	int pBufferLen = 0;
+
+	char *line;
+	line = malloc(sizeof(char) * 100);
+	strcpy(line, firstCmd.httpVersion);
+	strcat(line, " 200 OK");
+	addResponse(pBuffer, &pBufferLen, line, strlen(line));
+	line = "Date: Mon, 25 Oct 2010 07:54:17 GMT";
+	addResponse(pBuffer, &pBufferLen, line, strlen(line));
+	line = "Connection: close";
+	addResponse(pBuffer, &pBufferLen, line, strlen(line));
+	int i;
+	int len = 0;
+	for (i = 0; i < cmdListSize; i++)
+		len += strlen(cmdList[i]) + 2;
+	char *contentLength = malloc(sizeof(char) * 100);
+	sprintf(contentLength, "Content-Length: %d", len);
+	addResponse(pBuffer, &pBufferLen, contentLength, strlen(contentLength));
+
+	addCRLF(pBuffer, &pBufferLen);
+	for (i = 0; i < cmdListSize; i++)
+		addResponse(pBuffer, &pBufferLen, cmdList[i], strlen(cmdList[i]));
+	if (DEBUG)
+		printf("pBuffer = %s\n", pBuffer);
+	write(hSocket, pBuffer, pBufferLen);
+}
+
+
 void doGetOrHead(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 	char *path = firstCmd.path;
 	char *pBuffer = malloc(sizeof(char) * 10000000);
@@ -209,6 +240,8 @@ void processHttpRequest(char *request, int hSocket, char *webRoot) {
 			doGetOrHead(firstCmd, hSocket, webRoot);
 		else if (strcmp(firstCmd.httpOp, "DELETE") == 0)
 			doDelete(firstCmd, hSocket, webRoot);
+		else if (strcmp(firstCmd.httpOp, "TRACE") == 0)
+			doTrace(firstCmd, hSocket);
 	}
 }
 
