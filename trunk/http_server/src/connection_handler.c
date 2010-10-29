@@ -21,6 +21,7 @@
 char **cmdList;
 int cmdListSize;
 int acceptingConn;
+struct FirstCmd firstCmd;
 
 void splitToArray(char *curRequest) {
 	cmdList = malloc(sizeof(char *) * 100);
@@ -167,6 +168,8 @@ void doPut(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 	else
 		strcat(line, " 200 OK");
 	addResponse(pBuffer, &pBufferLen, line, strlen(line));
+	line = getNowGMTDate();
+	addResponse(pBuffer, &pBufferLen, line, strlen(line));
 	line = "Connection: close";
 	addResponse(pBuffer, &pBufferLen, line, strlen(line));
 	line = "Content-Length: 0";
@@ -187,7 +190,9 @@ void doTrace(struct FirstCmd firstCmd, int hSocket) {
 	strcpy(line, firstCmd.httpVersion);
 	strcat(line, " 200 OK");
 	addResponse(pBuffer, &pBufferLen, line, strlen(line));
-	line = "Date: Mon, 25 Oct 2010 07:54:17 GMT";
+	line = getNowGMTDate();
+	if (DEBUG)
+		printf("line = %s\n", line);
 	addResponse(pBuffer, &pBufferLen, line, strlen(line));
 	line = "Connection: close";
 	addResponse(pBuffer, &pBufferLen, line, strlen(line));
@@ -230,6 +235,8 @@ void doGetOrHead(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 		strcpy(line, firstCmd.httpVersion);
 		strcat(line, " 404 Not Found");
 		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		line = getNowGMTDate();
+		addResponse(pBuffer, &pBufferLen, line, strlen(line));
 		line = "Connection: close";
 		addResponse(pBuffer, &pBufferLen, line, strlen(line));
 		line = "Content-Type: text/html";
@@ -255,7 +262,7 @@ void doGetOrHead(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 		strcpy(line, firstCmd.httpVersion);
 		strcat(line, " 200 OK");
 		addResponse(pBuffer, &pBufferLen, line, strlen(line));
-		line = "Date: Mon, 25 Oct 2010 07:54:17 GMT";
+		line = getNowGMTDate();
 		addResponse(pBuffer, &pBufferLen, line, strlen(line));
 		line = "Connection: keep-alive";
 		addResponse(pBuffer, &pBufferLen, line, strlen(line));
@@ -320,7 +327,7 @@ void processHttpRequest(char *request, int hSocket, char *webRoot) {
 					printf("%s\n", cmdList[i]);
 			}
 		}
-		struct FirstCmd firstCmd = processFirstCmd();
+		firstCmd = processFirstCmd();
 
 		if (DEBUG) {
 			printf("httpOp = %s\n", firstCmd.httpOp);
@@ -355,14 +362,14 @@ void handleNewConnection(int hSocket, char *webRoot) {
 			httpRequest = strcat(httpRequest, newHttpRequest);
 
 			processHttpRequest(httpRequest, hSocket, webRoot);
-			if (strcmp(firstCmd.httpVersion("HTTP/1.0") == 0) {
+			if (strcmp(firstCmd.httpVersion,"HTTP/1.0") == 0) {
 				acceptingConn = 0;
 			}
 		} else {
 			//printf("read == 0");
 		}
 	}
-	close(fsocket);
+	close(hSocket);
 }
 
 
