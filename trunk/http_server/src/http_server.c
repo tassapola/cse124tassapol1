@@ -20,34 +20,37 @@
 #define QUEUE_SIZE		100
 #define BUFFER_SIZE		100000
 
-int main(void) {
+int port;
+char *webRoot;
+
+int main(int argc, char **argv) {
+	if (argc != 3) {
+			printf("Usage: ./http_server <port number> <web root path>\n");
+			return EXIT_SUCCESS;
+		} else {
+			port = atoi(argv[1]);
+			webRoot = argv[2];
+			//printf("%d %s\n",portNo, webRoot);
+		}
+
 	int hSocket, hServerSocket;
 	struct sockaddr_in address;
-	char *webRoot = "/home/tor/cse124tassapol1/webroot";
-
-	int port;
-	for (port = 30000; port < 30010; port ++) {
-		hServerSocket = socket(AF_INET, SOCK_STREAM, 0);
-		if (hServerSocket == SOCKET_ERROR) {
-			printf("Could not make a socket\n");
-			return EXIT_SUCCESS;
-		}
-		address.sin_addr.s_addr = INADDR_ANY;
-		address.sin_port = htons(port);
-		address.sin_family = AF_INET;
-
-
-		if (bind(hServerSocket, (struct sockaddr *) &address, sizeof(address)) == SOCKET_ERROR) {
-
-		} else {
-			printf("successfully binding to port %d\n", port);
-			break;
-		}
-	}
-	if (port == 30011) {
-		printf("could not bind socket to any port\n");
+	hServerSocket = socket(AF_INET, SOCK_STREAM, 0);
+	if (hServerSocket == SOCKET_ERROR) {
+		printf("Could not make a socket\n");
 		return EXIT_SUCCESS;
 	}
+	address.sin_addr.s_addr = INADDR_ANY;
+	address.sin_port = htons(port);
+	address.sin_family = AF_INET;
+
+
+	if (bind(hServerSocket, (struct sockaddr *) &address, sizeof(address)) == SOCKET_ERROR) {
+		printf("Error on binding to port %d, it might be in use.\n", port);
+		return EXIT_SUCCESS;
+	} else {
+		printf("successfully binding to port %d\n", port);
+	  }
 	int nAddressSize = sizeof(struct sockaddr_in);
 	getsockname(hServerSocket, (struct sockaddr *) &address, (socklen_t *) &nAddressSize);
 	if (listen(hServerSocket, QUEUE_SIZE) == SOCKET_ERROR) {

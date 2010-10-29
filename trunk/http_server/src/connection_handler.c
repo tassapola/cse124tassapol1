@@ -15,7 +15,7 @@
 
 #define SOCKET_ERROR	-1
 #define BUFFER_SIZE		100000
-#define DEBUG			1
+#define DEBUG			0
 
 
 char **cmdList;
