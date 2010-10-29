@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <time.h>
+#include <sys/stat.h>
 
 char *getNowGMTDate() {
 	time_t timer;                // Define the timer
@@ -101,4 +102,107 @@ char *extractFirstWord(char **ptr) {
 	//printf("word = %s\n", word);
 	*ptr = blankPos + 1;
 	return word;
+}
+
+
+char *extractFirstWordByColon(char **ptr) {
+	char *s = *ptr;
+	char *blankPos = strchrnul(s, ':'); //return pointer to space or to end of string
+	//printf("s = %s, blankPos = %s\n", s, blankPos);
+	char *word = malloc(sizeof(char) * (strlen(s) + 1));
+	strncpy(word, s, blankPos - s);
+	//printf("blankPos - s = %d\n", blankPos - s);
+	word[blankPos - s + 1] = '\0';
+	if (strlen(word) > 0) {
+		char c = word[strlen(word)-1];
+		if (!((c >= 'A' && c <= 'Z') || (c >='a' && c <= 'z') || (c >='0' && c <= '9')))
+			word[strlen(word)-1] = '\0';
+	}
+	//printf("word = %s\n", word);
+	*ptr = blankPos + 1;
+	return word;
+}
+
+struct tm* getModifiedSinceTime(char *line) {
+
+	int day, month, year;
+	int hour, min, sec;
+	char *s;
+	char *months[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+
+	extractFirstWord(&line);
+	extractFirstWord(&line);
+	//printf("%s\n", extractFirstWord(&line)); //If-Modified-Since
+	//printf("%s\n", extractFirstWord(&line)); //Mon
+	s = extractFirstWord(&line); //25
+	day = atoi(s);
+	s = extractFirstWord(&line); //Oct
+	int i;
+	for (i=0; i < 12; i++)
+		if (strcmp(s, months[i]) == 0) {
+			month = (i+1);
+			break;
+		}
+	s = extractFirstWord(&line); //2010
+	year = atoi(s);
+	s = extractFirstWord(&line); //07:54:17
+	char *s2;
+	s2 = extractFirstWordByColon(&s); //07
+	hour = atoi(s2);
+	s2 = extractFirstWordByColon(&s); //54
+	min = atoi(s2);
+	s2 = extractFirstWordByColon(&s); //17
+	sec = atoi(s2);
+	s = extractFirstWord(&line); //GMT
+
+	//printf("day = %d\n", day);
+	//printf("month = %d\n", month);
+	//printf("year = %d\n", year);
+	//printf("hour = %d\n", hour);
+	//printf("min = %d\n", min);
+	//printf("sec = %d\n", sec);
+	struct tm *result = malloc(sizeof(struct tm));
+	result->tm_mday = day;
+	result->tm_mon = month - 1;
+	result->tm_year = year - 1900;
+	result->tm_hour = hour;
+	result->tm_min = min;
+	result->tm_sec = sec;
+	printStructTm(result);
+	return result;
+}
+
+void printStructTm(struct tm* t) {
+	printf("%d/%d/%d %d:%d:%d\n", t->tm_mon, t->tm_mday, t->tm_year, t->tm_hour, t->tm_min, t->tm_sec);
+}
+
+int isFileModifiedAfterSinceTime(char *file, struct tm* since) {
+	struct stat st;
+
+	if (!stat(file, &st)) {
+		struct tm* fileT = gmtime(&st.st_mtime);
+		//char t[100];
+		//strftime(t, 100, "%d/%m/%Y %H:%M:%S", fileT);
+		//printf("\nLast modified date and time = %s\n", t);
+		printStructTm(since);
+		printStructTm(fileT);
+		if (fileT->tm_year > since->tm_year) return 1;
+		else {
+			if (fileT->tm_year == since->tm_year) {
+				if (fileT->tm_mon > since->tm_mon) {
+					return 1;
+				}
+				else if (fileT->tm_mon == since->tm_mon)
+					if (fileT->tm_mday > since->tm_mday) return 1;
+					else if (fileT->tm_mday == since->tm_mday)
+						if (fileT->tm_hour > since->tm_hour) return 1;
+						else if (fileT->tm_hour == since->tm_hour)
+							if (fileT->tm_min > since->tm_min) return 1;
+							else if (fileT->tm_min == since->tm_min)
+								if (fileT->tm_sec > since->tm_sec) return 1;
+			}
+
+		}
+	}
+	return 0;
 }

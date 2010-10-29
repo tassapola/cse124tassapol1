@@ -260,12 +260,21 @@ void doGetOrHead(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 		char *line;
 		line = malloc(sizeof(char) * 100);
 		strcpy(line, firstCmd.httpVersion);
-		strcat(line, " 200 OK");
-		addResponse(pBuffer, &pBufferLen, line, strlen(line));
-		line = getNowGMTDate();
-		addResponse(pBuffer, &pBufferLen, line, strlen(line));
-		line = "Connection: keep-alive";
-		addResponse(pBuffer, &pBufferLen, line, strlen(line));
+		int ifModifiedSinceIndex = -1;
+		int i;
+		for (i = 0; i < cmdList[i]; i++) {
+			if (strcasestr(cmdList[i], "If-Modified-Since:")) {
+				ifModifiedSinceIndex = i;
+				break;
+			}
+		}
+		if (ifModifiedSinceIndex == -1) {
+			strcat(line, " 200 OK");
+			addResponse(pBuffer, &pBufferLen, line, strlen(line));
+			line = getNowGMTDate();
+			addResponse(pBuffer, &pBufferLen, line, strlen(line));
+			line = "Connection: keep-alive";
+			addResponse(pBuffer, &pBufferLen, line, strlen(line));
 			char *contentType = getContentType(path);
 			addResponse(pBuffer, &pBufferLen, contentType, strlen(contentType));
 			char *contentLength = malloc(sizeof(char) * 100);
@@ -274,6 +283,36 @@ void doGetOrHead(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 			addCRLF(pBuffer, &pBufferLen);
 			if (isGet)
 				addResponse(pBuffer, &pBufferLen, bodyBuffer, bodyLen);
+		} else {
+			//found if modified since
+			struct tm* t1 = getModifiedSinceTime(cmdList[ifModifiedSinceIndex]);
+			if (isFileModifiedAfterSinceTime(absolutePath, t1)) {
+				strcat(line, " 200 OK");
+				addResponse(pBuffer, &pBufferLen, line, strlen(line));
+				line = getNowGMTDate();
+				addResponse(pBuffer, &pBufferLen, line, strlen(line));
+				line = "Connection: keep-alive";
+				addResponse(pBuffer, &pBufferLen, line, strlen(line));
+				char *contentType = getContentType(path);
+				addResponse(pBuffer, &pBufferLen, contentType, strlen(contentType));
+				char *contentLength = malloc(sizeof(char) * 100);
+				sprintf(contentLength, "Content-Length: %d", bodyLen);
+				addResponse(pBuffer, &pBufferLen, contentLength, strlen(contentLength));
+				addCRLF(pBuffer, &pBufferLen);
+				if (isGet)
+					addResponse(pBuffer, &pBufferLen, bodyBuffer, bodyLen);
+			} else {
+				strcat(line, " 304 Not Modified");
+				addResponse(pBuffer, &pBufferLen, line, strlen(line));
+				line = getNowGMTDate();
+				addResponse(pBuffer, &pBufferLen, line, strlen(line));
+				line = "Connection: keep-alive";
+				addResponse(pBuffer, &pBufferLen, line, strlen(line));
+				line = "Content-Length: 0";
+				addResponse(pBuffer, &pBufferLen, line, strlen(line));
+				addCRLF(pBuffer, &pBufferLen);
+			}
+		}
 	}
 	if (isGet)
 		printf("  responding to GET command\n");
