@@ -268,6 +268,9 @@ void doGetOrHead(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 				break;
 			}
 		}
+		if (DEBUG) {
+			printf("ifModifiedSinceIndex = %d\n", ifModifiedSinceIndex);
+		}
 		if (ifModifiedSinceIndex == -1) {
 			strcat(line, " 200 OK");
 			addResponse(pBuffer, &pBufferLen, line, strlen(line));
@@ -277,9 +280,14 @@ void doGetOrHead(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 			addResponse(pBuffer, &pBufferLen, line, strlen(line));
 			char *contentType = getContentType(path);
 			addResponse(pBuffer, &pBufferLen, contentType, strlen(contentType));
-			char *contentLength = malloc(sizeof(char) * 100);
-			sprintf(contentLength, "Content-Length: %d", bodyLen);
-			addResponse(pBuffer, &pBufferLen, contentLength, strlen(contentLength));
+			if (isGet) {
+				char *contentLength = malloc(sizeof(char) * 100);
+				sprintf(contentLength, "Content-Length: %d", bodyLen);
+				addResponse(pBuffer, &pBufferLen, contentLength, strlen(contentLength));
+			} else {
+				line = "Content-Length: 0";
+				addResponse(pBuffer, &pBufferLen, line, strlen(line));
+			}
 			addCRLF(pBuffer, &pBufferLen);
 			if (isGet)
 				addResponse(pBuffer, &pBufferLen, bodyBuffer, bodyLen);
@@ -295,9 +303,14 @@ void doGetOrHead(struct FirstCmd firstCmd, int hSocket, char *webRoot) {
 				addResponse(pBuffer, &pBufferLen, line, strlen(line));
 				char *contentType = getContentType(path);
 				addResponse(pBuffer, &pBufferLen, contentType, strlen(contentType));
-				char *contentLength = malloc(sizeof(char) * 100);
-				sprintf(contentLength, "Content-Length: %d", bodyLen);
-				addResponse(pBuffer, &pBufferLen, contentLength, strlen(contentLength));
+				if (isGet) {
+					char *contentLength = malloc(sizeof(char) * 100);
+					sprintf(contentLength, "Content-Length: %d", bodyLen);
+					addResponse(pBuffer, &pBufferLen, contentLength, strlen(contentLength));
+				} else {
+					line = "Content-Length: 0";
+					addResponse(pBuffer, &pBufferLen, line, strlen(line));
+				}
 				addCRLF(pBuffer, &pBufferLen);
 				if (isGet)
 					addResponse(pBuffer, &pBufferLen, bodyBuffer, bodyLen);
@@ -408,6 +421,7 @@ void handleNewConnection(int hSocket, char *webRoot) {
 			//printf("read == 0");
 		}
 	}
+	sleep(1000);
 	close(hSocket);
 }
 
